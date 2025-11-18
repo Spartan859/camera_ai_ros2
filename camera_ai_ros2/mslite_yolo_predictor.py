@@ -28,6 +28,7 @@ class MSLiteYOLODetector:
         logger: Any | None = None,
     ) -> None:
         self._log = logger
+        self._log.info('Initializing MSLiteYOLODetector...')
         self.mindir_path = mindir_path
         if not os.path.isfile(self.mindir_path):
             raise FileNotFoundError(f'mindir file not found: {self.mindir_path}')

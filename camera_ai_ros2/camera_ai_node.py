@@ -50,8 +50,11 @@ class CameraAINode(Node):
                     detection_interval=int(max(1, round(detection_interval))),
                     logger=self.get_logger()
                 )
+                self.get_logger().info('Initializing CameraAI')
+                self.get_logger().info(f'status:{self.ai.start()}')
                 if not self.ai.start():
                     self.get_logger().warn('CameraAI failed to start; node will publish WARNING status')
+                self.get_logger().info('CameraAI initialized')
             except Exception as e:
                 self.get_logger().error(f'Failed to initialize CameraAI: {e}')
                 self.ai = None

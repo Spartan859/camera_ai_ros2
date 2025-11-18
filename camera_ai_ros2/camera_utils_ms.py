@@ -79,6 +79,7 @@ class CameraAI:
         self._detection_interval = max(1, int(detection_interval))
 
     def start(self) -> bool:
+        print('Starting CameraAI...')
         if self.is_running:
             if self._log:
                 self._log.info('CameraAI is already running.')
