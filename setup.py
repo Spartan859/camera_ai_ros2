@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'camera_ai_node = camera_ai_ros2.camera_ai_node:main',
         ],
     },
 )
