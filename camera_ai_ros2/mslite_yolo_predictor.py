@@ -25,7 +25,9 @@ class MSLiteYOLODetector:
         device_target: str = 'Ascend',
         single_cls: bool = False,
         names: List[str] | None = None,
+        logger: Any | None = None,
     ) -> None:
+        self._log = logger
         self.mindir_path = mindir_path
         if not os.path.isfile(self.mindir_path):
             raise FileNotFoundError(f'mindir file not found: {self.mindir_path}')
@@ -38,15 +40,21 @@ class MSLiteYOLODetector:
         self.single_cls = single_cls
         self.names = names or []
 
-        logger.setup_logging(logger_name='MindYOLO', log_level='INFO')
-        logger.info('Initializing MSLite model context...')
+        try:
+            logger.setup_logging(logger_name='MindYOLO', log_level='INFO')
+        except Exception:
+            pass
+        if self._log:
+            self._log.info('Initializing MSLite model context...')
         self.context = mslite.Context()
         self.context.target = [self.device_target]
         self.model = mslite.Model()
-        logger.info('Building model from mindir...')
+        if self._log:
+            self._log.info('Building model from mindir...')
         self.model.build_from_file(self.mindir_path, mslite.ModelType.MINDIR, self.context)
         self.inputs = self.model.get_inputs()
-        logger.info('Model loaded successfully.')
+        if self._log:
+            self._log.info('Model loaded successfully.')
 
     def _resize_and_pad(self, img: np.ndarray) -> np.ndarray:
         h_ori, w_ori = img.shape[:2]
@@ -114,11 +122,10 @@ class MSLiteYOLODetector:
         result_dict['bbox'].extend(total_bboxes)
         result_dict['score'].extend(total_scores)
 
-        logger.info(
-            'Speed: %.1f/%.1f/%.1f ms inference/NMS/total for %gx%g image.' % (
+        if self._log:
+            self._log.info('Speed: %.1f/%.1f/%.1f ms inference/NMS/total for %gx%g image.' % (
                 infer_time * 1e3, nms_time * 1e3, (infer_time + nms_time) * 1e3, self.img_size, self.img_size
-            )
-        )
+            ))
         return result_dict
 
     __call__ = predict

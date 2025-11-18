@@ -47,7 +47,8 @@ class CameraAINode(Node):
                     mindir_path=mindir_path,
                     visualize=visualize,
                     device_target=device_target,
-                    detection_interval=int(max(1, round(detection_interval)))
+                    detection_interval=int(max(1, round(detection_interval))),
+                    logger=self.get_logger()
                 )
                 if not self.ai.start():
                     self.get_logger().warn('CameraAI failed to start; node will publish WARNING status')

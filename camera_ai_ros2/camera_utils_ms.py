@@ -3,7 +3,7 @@
 
 import threading
 import time
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Any
 
 import numpy as np
 
@@ -45,7 +45,10 @@ class CameraAI:
         conf_free: bool = True,
         device_target: str = 'Ascend',
         detection_interval: int = 1,
+        logger: Any | None = None,
     ) -> None:
+        # logger: expect rclpy Logger or std logging-like with info/warn/error
+        self._log = logger
         self._visualize = visualize
         self._mindir_path = mindir_path
         self._detector: Optional[MSLiteYOLODetector] = None
@@ -77,9 +80,14 @@ class CameraAI:
 
     def start(self) -> bool:
         if self.is_running:
+            if self._log:
+                self._log.info('CameraAI is already running.')
             return True
         if rs is None:
-            print('pyrealsense2 not available')
+            if self._log:
+                self._log.error('pyrealsense2 not available')
+            else:
+                print('pyrealsense2 not available')
             return False
         if not self._initialize_camera():
             return False
@@ -87,6 +95,8 @@ class CameraAI:
         self._detection_thread = threading.Thread(target=self._run_detection_loop, daemon=True)
         self._detection_thread.start()
         self.is_running = True
+        if self._log:
+            self._log.info('✅ CameraAI service started successfully (NPU initializing in background).')
         return True
 
     def stop(self) -> None:
@@ -101,6 +111,8 @@ class CameraAI:
             except Exception:
                 pass
         self.is_running = False
+        if self._log:
+            self._log.info('🧹 Resources cleaned up.')
 
     def get_latest_person_detections(self) -> List[dict]:
         with self._lock:
@@ -128,14 +140,23 @@ class CameraAI:
 
     def _initialize_detector(self) -> bool:
         try:
-            self._detector = MSLiteYOLODetector(**self._detector_args)
+            if self._log:
+                self._log.info('🧠 Initializing MindSpore Lite YOLO detector...')
+            self._detector = MSLiteYOLODetector(**self._detector_args, logger=self._log)
+            if self._log:
+                self._log.info('✅ YOLO mindir model loaded successfully.')
             return True
         except Exception as e:
-            print(f'Failed to load mindir model: {e}')
+            if self._log:
+                self._log.error(f'❌ Failed to load mindir model: {e}')
+            else:
+                print(f'Failed to load mindir model: {e}')
             return False
 
     def _initialize_camera(self) -> bool:
         try:
+            if self._log:
+                self._log.info('📷 Initializing RealSense D455 camera...')
             self._pipeline = rs.pipeline()
             cfg = rs.config()
             cfg.enable_stream(rs.stream.depth, 424, 240, rs.format.z16, 30)
@@ -144,9 +165,14 @@ class CameraAI:
             self._align = rs.align(rs.stream.color)
             self._colorizer = rs.colorizer()
             self._colorizer.set_option(rs.option.color_scheme, 2)
+            if self._log:
+                self._log.info('✅ RealSense camera initialized successfully.')
             return True
         except Exception as e:
-            print(f'Failed to initialize RealSense: {e}')
+            if self._log:
+                self._log.error(f'❌ Failed to initialize RealSense camera: {e}')
+            else:
+                print(f'Failed to initialize RealSense: {e}')
             return False
 
     def _run_detection_loop(self) -> None:
@@ -181,7 +207,10 @@ class CameraAI:
                     self._latest_depth_frame = depth_frame
                     self._latest_depth_heatmap = None
             except Exception as e:
-                print(f'Error in detection loop: {e}')
+                if self._log:
+                    self._log.warn(f'Error in detection loop: {e}')
+                else:
+                    print(f'Error in detection loop: {e}')
                 time.sleep(1)
             time.sleep(self._detection_interval)
 
