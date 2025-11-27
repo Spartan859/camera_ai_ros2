@@ -44,7 +44,7 @@ class CameraAI:
         nms_time_limit: float = 60.0,
         conf_free: bool = True,
         device_target: str = 'Ascend',
-        detection_interval: int = 1,
+        detection_interval: float = 1.0,
         logger: Any | None = None,
     ) -> None:
         # logger: expect rclpy Logger or std logging-like with info/warn/error
@@ -76,7 +76,7 @@ class CameraAI:
         self._latest_depth_frame = None
         self._latest_depth_heatmap = None
         self.is_running = False
-        self._detection_interval = max(1, int(detection_interval))
+        self._detection_interval = max(0.1, detection_interval)  # seconds, minimum 0.1s
 
     def start(self) -> bool:
         print('Starting CameraAI...')
@@ -182,6 +182,7 @@ class CameraAI:
             return
         import cv2
         while not self._stop_event.is_set():
+            loop_start_time = time.time()
             try:
                 frames = self._pipeline.wait_for_frames(timeout_ms=2000)
                 if not frames:
@@ -213,7 +214,11 @@ class CameraAI:
                 else:
                     print(f'Error in detection loop: {e}')
                 time.sleep(1)
-            time.sleep(self._detection_interval)
+            # Calculate elapsed time and sleep to maintain interval
+            elapsed = time.time() - loop_start_time
+            sleep_time = max(0.0, self._detection_interval - elapsed)
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
     @staticmethod
     def _get_center_distance(depth_frame, box: list) -> float:
