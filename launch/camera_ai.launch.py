@@ -10,7 +10,7 @@ def generate_launch_description():
     interval_arg = DeclareLaunchArgument('detection_interval', default_value='1.0')
     device_arg = DeclareLaunchArgument('device_target', default_value='Ascend')
     enabled_arg = DeclareLaunchArgument('enabled', default_value='true')
-    person_safe_dist_arg = DeclareLaunchArgument('person_safe_dist', default_value='1.5')
+    person_safe_dist_arg = DeclareLaunchArgument('person_safe_dist', default_value='1.0')
     obstacle_safe_dist_arg = DeclareLaunchArgument('obstacle_safe_dist', default_value='1.0')
 
     node = Node(

@@ -63,6 +63,7 @@ class CameraAINode(Node):
 
         # Timer to publish status and detections (~same rate as detection_interval)
         pub_period = max(0.1, float(detection_interval))
+        self.get_logger().info(f'Setting publish period to {pub_period} seconds')
         self.timer = self.create_timer(pub_period, self._on_timer)
 
         self.get_logger().info('camera_ai_node started')
